@@ -27,10 +27,10 @@ def read(filename):
 
 
 setup(
-    name='proteus-cli',
-    version='0.1',
+    name='proteuscli',
+    version='0.2',
     description=description_text,
-    url='https://github.com/virtUOS/proteus-cli',
+    url='https://github.com/virtUOS/proteuscli',
     author='Lars Kiesow',
     author_email='lkiesow@uos.de',
     license='MIT',
@@ -41,5 +41,5 @@ setup(
     long_description=read('README.md'),
     long_description_content_type='text/markdown',
     entry_points={
-        'console_scripts': ['proteus-cli = proteuscli.__main__:main'],
+        'console_scripts': ['proteuscli = proteuscli.__main__:main'],
     })
