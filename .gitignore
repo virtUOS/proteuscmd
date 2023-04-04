@@ -1,5 +1,5 @@
 build/
 dist/
-proteuscli.egg-info/
-proteuscli/__pycache__/
+proteuscmd.egg-info/
+proteuscmd/__pycache__/
 venv/

@@ -4,10 +4,10 @@ A simple command line client to modify DNS entries in Proteus.
 
 ## Installation
 
-Use `pip` to install `proteuscli`:
+Use `pip` to install `proteuscmd`:
 
 ```
-❯ pip install proteuscli
+❯ pip install proteuscmd
 ```
 
 ## Configuration
@@ -24,26 +24,26 @@ Configure access credentials in `~/.proteus.json`:
 ## Usage
 
 ```
-❯ proteuscli
-usage: proteuscli [-h] [--view {all,intern,extern}] {get,set,delete} domain [target]
+❯ proteuscmd
+usage: proteuscmd [-h] [--view {all,intern,extern}] {get,set,delete} domain [target]
 ```
 
 Get information about a DNS record:
 ```
-❯ proteuscli get lktest.uni-osnabrueck.de
+❯ proteuscmd get lktest.uni-osnabrueck.de
 ```
 
 Set an alias record:
 ```
-❯ proteuscli set lktest.uni-osnabrueck.de vm123.rz.uni-osnabrueck.de
+❯ proteuscmd set lktest.uni-osnabrueck.de vm123.rz.uni-osnabrueck.de
 ```
 
 Set a host record:
 ```
-❯ proteuscli set lktest.uni-osnabrueck.de 131.12.65.123
+❯ proteuscmd set lktest.uni-osnabrueck.de 131.12.65.123
 ```
 
 Delete a record:
 ```
-❯ proteuscli delete lktest.uni-osnabrueck.de
+❯ proteuscmd delete lktest.uni-osnabrueck.de
 ```
