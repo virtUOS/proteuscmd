@@ -97,6 +97,10 @@ def get_record(auth, view, domain):
     parent = view
     for zone in zones:
         data = getEntitiesByName(auth, zone, parent, 'Zone')
+        if not data:
+            zone_path = ' → '.join(zones)
+            print(f'Zone {zone_path} could not be found.')
+            exit(1)
         parent = data[0]['id']
 
     # Get host
