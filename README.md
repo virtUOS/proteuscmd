@@ -21,6 +21,17 @@ Configure access credentials in `~/.proteus.json`:
 }
 ```
 
+Additionally, you can specify a map of automatic replacements for domains.
+This can be useful if, for example, all your domains also have an alternate domain with a `DNAME` record.
+```json
+{
+	...
+	"replace": {
+		".ex.com": ".example.com"
+	}
+}
+```
+
 ## Usage
 
 ```

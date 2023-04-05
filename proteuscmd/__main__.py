@@ -59,6 +59,8 @@ def getEntities(auth_header, parent, object_type):
 
 
 def parse_domain(domain):
+    for src, to in (config('replace') or {}).items():
+        domain = domain.replace(src, to)
     fragments = list(filter(bool, domain.split('.')[::-1]))
     return fragments[:-1], fragments[-1]
 
