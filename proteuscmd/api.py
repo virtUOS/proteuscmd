@@ -36,7 +36,7 @@ class Proteus:
         return response.json()
 
     def __get(self, path, params):
-        response = requests.get(self.__url('getEntitiesByName'),
+        response = requests.get(self.__url(path),
                                 params=params,
                                 headers=self.__auth_header)
         return response.json()
@@ -75,6 +75,33 @@ class Proteus:
                   'start': 0,
                   'type': object_type}
         return self.__get('getEntities', params)
+
+    def assign_ip_address(self, conf_id, status, ip, mac, properties):
+        status = status.upper()
+        if status not in ['STATIC', 'RESERVED', 'DHCP_RESERVED']:
+            raise Exception(f'Invalid status: {status}')
+
+        props = '|'.join([f'{k}={v}' for k, v in properties.items()])
+
+        params = {'action': f'MAKE_{status}',
+                  'configurationId': conf_id,
+                  'ip4Address': ip,
+                  'macAddress': mac,
+                  'properties': props}
+        response = self.__post('assignIP4Address', params)
+
+        if response.status_code != 200:
+            raise Exception(response.text)
+
+    def get_ip_range_by_ip(self, ip, conf_id):
+        params = {'address': ip,
+                  'containerId': conf_id,
+                  'type': 'IP4Network'}
+        return self.__get('getIPRangedByIP', params=params)
+
+    def get_ip4_address(self, ip, range_id):
+        params = {'address': ip, 'containerId': range_id}
+        return self.__get('getIP4Address', params=params)
 
     def parse_domain(self, domain):
         for src, to in self.__replacements.items():
@@ -135,6 +162,7 @@ class Proteus:
         for record in data:
             properties = record['properties'].split('|')
             return [prop for prop in filter(bool, properties)]
+        return []
 
     def set_record(self, view, domain, target):
 
