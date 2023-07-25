@@ -1,7 +1,6 @@
 import argparse
 
-from proteuscmd.api import Proteus
-from proteuscmd.config import config
+from proteuscmd.config import proteus_from_config
 
 __config = None
 
@@ -27,8 +26,7 @@ def main():
         parser.error("set requires a target.")
 
     # Interaction with Proteus
-    cfg = config('user'), config('password'), config('url'), config('replace')
-    with Proteus(*cfg) as proteus:
+    with proteus_from_config() as proteus:
         views = proteus.get_requested_views(args.view)
 
         for name, view in views:
