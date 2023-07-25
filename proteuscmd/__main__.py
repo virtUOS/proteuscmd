@@ -1,21 +1,9 @@
 import argparse
-import json
-import pathlib
 
 from proteuscmd.api import Proteus
+from proteuscmd.config import config
 
 __config = None
-
-
-def config(key):
-    '''Access configuration.
-    Loading it from the configuration file if not already done.
-    '''
-    global __config
-    if not __config:
-        with open(pathlib.Path().home() / '.proteus.json', 'r') as f:
-            __config = json.load(f)
-    return __config.get(key) if key else __config
 
 
 def main():
