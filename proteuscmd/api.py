@@ -33,6 +33,8 @@ class Proteus:
         response = requests.post(self.__url(path),
                                  params=params,
                                  headers=self.__auth_header)
+        if response.status_code >= 300:
+            raise Exception(f'Error from requesting {path}: {response.text}')
         return response.json()
 
     def __get(self, path, params):
@@ -45,6 +47,23 @@ class Proteus:
         return requests.delete(self.__url('delete'),
                                params=params,
                                headers=self.__auth_header)
+
+    def __parse_domain(self, domain):
+        for src, to in self.__replacements.items():
+            domain = domain.replace(src, to)
+        fragments = list(filter(bool, domain.split('.')[::-1]))
+        return fragments[:-1], fragments[-1]
+
+    def __record_type_from_target(self, target):
+        '''Return type of record based on the target.
+        HostRecord if the target is an IP address,
+        AliasRecord if it is a domain
+        '''
+        try:
+            ipaddress.ip_address(target)
+            return 'HostRecord'
+        except ValueError:
+            return 'AliasRecord'
 
     def login(self):
         '''Logging in at Proteus.
@@ -76,7 +95,8 @@ class Proteus:
                   'type': object_type}
         return self.__get('getEntities', params)
 
-    def assign_ip_address(self, conf_id, status, ip, mac, properties):
+    def assign_ip_address(self, conf_id, status, ip, mac, properties,
+                          hostname=None, view=None):
         status = status.upper()
         if status not in ['STATIC', 'RESERVED', 'DHCP_RESERVED']:
             raise Exception(f'Invalid status: {status}')
@@ -88,10 +108,12 @@ class Proteus:
                   'ip4Address': ip,
                   'macAddress': mac,
                   'properties': props}
-        response = self.__post('assignIP4Address', params)
 
-        if response.status_code != 200:
-            raise Exception(response.text)
+        if hostname and view:
+            view_ids = [x[1] for x in self.get_requested_views(view)]
+            hosts = ','.join([f'{hostname},{v},true,false' for v in view_ids])
+            params['hostInfo'] = hosts
+        return self.__post('assignIP4Address', params)
 
     def get_ip_range_by_ip(self, ip, conf_id):
         params = {'address': ip,
@@ -102,12 +124,6 @@ class Proteus:
     def get_ip4_address(self, ip, range_id):
         params = {'address': ip, 'containerId': range_id}
         return self.__get('getIP4Address', params=params)
-
-    def parse_domain(self, domain):
-        for src, to in self.__replacements.items():
-            domain = domain.replace(src, to)
-        fragments = list(filter(bool, domain.split('.')[::-1]))
-        return fragments[:-1], fragments[-1]
 
     def get_requested_views(self, view_arg):
         '''Get requested views.
@@ -130,22 +146,11 @@ class Proteus:
 
         return views
 
-    def record_type_from_target(self, target):
-        '''Return type of record based on the target.
-        HostRecord if the target is an IP address,
-        AliasRecord if it is a domain
-        '''
-        try:
-            ipaddress.ip_address(target)
-            return 'HostRecord'
-        except ValueError:
-            return 'AliasRecord'
-
     def get_record(self, view, domain):
         '''Get record for domain in specified view.
         '''
 
-        zones, host = self.parse_domain(domain)
+        zones, host = self.__parse_domain(domain)
 
         # Navigate through zones
         parent = view
@@ -166,7 +171,7 @@ class Proteus:
 
     def set_record(self, view, domain, target):
 
-        record_type = self.record_type_from_target(target)
+        record_type = self.__record_type_from_target(target)
 
         if record_type == 'HostRecord':
             params = {'absoluteName': domain,
@@ -184,7 +189,7 @@ class Proteus:
 
     def delete_record(self, view, domain):
 
-        zones, host = self.parse_domain(domain)
+        zones, host = self.__parse_domain(domain)
 
         # Navigate through zones
         parent = view
