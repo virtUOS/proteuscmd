@@ -151,5 +151,9 @@ def ip_delete(proteus, ip):
     proteus.delete_ip4_address(ip, range_id)
 
 
-if __name__ == '__main__':
+def main():
     cli()
+
+
+if __name__ == '__main__':
+    main()
