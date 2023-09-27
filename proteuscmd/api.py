@@ -68,6 +68,14 @@ class Proteus:
         except ValueError:
             return 'AliasRecord'
 
+    def __parse_properties(self, properties):
+        '''Take the property string returned by Proteus and turn it into a
+        dictionary containing the key-value pairs.
+        '''
+        properties = properties.split('|')
+        properties = [prop.split('=', 1) for prop in properties if prop]
+        return {prop[0]: prop[1] for prop in properties}
+
     def login(self):
         '''Logging in at Proteus.
         '''
@@ -128,7 +136,15 @@ class Proteus:
 
     def get_ip4_address(self, ip, range_id):
         params = {'address': ip, 'containerId': range_id}
-        return self.__get('getIP4Address', params=params)
+        data = self.__get('getIP4Address', params=params)
+        if data.get('properties'):
+            data['properties'] = self.__parse_properties(data['properties'])
+        return data
+
+    def delete_ip4_address(self, ip, range_id):
+        object_id = self.get_ip4_address(ip, range_id)['id']
+        payload = {'objectId': object_id}
+        return self.__delete('delete', payload)
 
     def get_requested_views(self, view_arg):
         '''Get requested views.
@@ -170,9 +186,7 @@ class Proteus:
         data = self.get_entities_by_name(host, parent, 'HostRecord') \
             + self.get_entities_by_name(host, parent, 'AliasRecord')
         for record in data:
-            properties = record['properties'].split('|')
-            properties = [prop.split('=', 1) for prop in properties if prop]
-            return {prop[0]: prop[1] for prop in properties}
+            return self.__parse_properties(record['properties'])
         return {}
 
     def set_record(self, view, domain, target):
