@@ -36,25 +36,32 @@ This can be useful if, for example, all your domains also have an alternate doma
 
 ```
 ❯ proteuscmd
-usage: proteuscmd [-h] [--view {all,intern,extern}] {get,set,delete} domain [target]
+Usage: python -m proteuscmd [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  dns  Get information about or update DNS entries.
+  ip   Register IP addresses.
 ```
 
 Get information about a DNS record:
 ```
-❯ proteuscmd get lktest.uni-osnabrueck.de
+❯ proteuscmd dns get lktest.uni-osnabrueck.de
 ```
 
 Set an alias record:
 ```
-❯ proteuscmd set lktest.uni-osnabrueck.de vm123.rz.uni-osnabrueck.de
+❯ proteuscmd dns set lktest.uni-osnabrueck.de vm123.rz.uni-osnabrueck.de
 ```
 
 Set a host record:
 ```
-❯ proteuscmd set lktest.uni-osnabrueck.de 131.12.65.123
+❯ proteuscmd dns set lktest.uni-osnabrueck.de 131.12.65.123
 ```
 
 Delete a record:
 ```
-❯ proteuscmd delete lktest.uni-osnabrueck.de
+❯ proteuscmd dns delete lktest.uni-osnabrueck.de
 ```

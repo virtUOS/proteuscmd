@@ -171,8 +171,9 @@ class Proteus:
             + self.get_entities_by_name(host, parent, 'AliasRecord')
         for record in data:
             properties = record['properties'].split('|')
-            return [prop for prop in filter(bool, properties)]
-        return []
+            properties = [prop.split('=', 1) for prop in properties if prop]
+            return {prop[0]: prop[1] for prop in properties}
+        return {}
 
     def set_record(self, view, domain, target):
 
