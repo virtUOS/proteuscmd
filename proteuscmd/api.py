@@ -32,7 +32,8 @@ class Proteus:
     def __post(self, path, params):
         response = requests.post(self.__url(path),
                                  params=params,
-                                 headers=self.__auth_header)
+                                 headers=self.__auth_header,
+                                 timeout=30)
         if response.status_code >= 300:
             raise Exception(f'Error from requesting {path}: {response.text}')
         return response.json()
@@ -40,13 +41,15 @@ class Proteus:
     def __get(self, path, params):
         response = requests.get(self.__url(path),
                                 params=params,
-                                headers=self.__auth_header)
+                                headers=self.__auth_header,
+                                timeout=30)
         return response.json()
 
     def __delete(self, path, params):
         return requests.delete(self.__url('delete'),
                                params=params,
-                               headers=self.__auth_header)
+                               headers=self.__auth_header,
+                               timeout=30)
 
     def __parse_domain(self, domain):
         for src, to in self.__replacements.items():
@@ -69,7 +72,9 @@ class Proteus:
         '''Logging in at Proteus.
         '''
         payload = {'username': self.__user, 'password': self.__password}
-        result = requests.get(self.__url('login'), params=payload).json()
+        result = requests.get(self.__url('login'),
+                              params=payload,
+                              timeout=30).json()
         token = result.split()[2] + ' ' + result.split()[3]
         self.__auth_header = {
                 'Authorization': token,
