@@ -1,0 +1,27 @@
+name: lint
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: set up python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+
+    - name: install Python dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install bandit flake8
+
+    - name: run flake8
+      run: flake8
+
+    - name: run bandit
+      run: bandit -r proteuscmd
