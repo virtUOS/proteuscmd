@@ -51,17 +51,24 @@ Get information about a DNS record:
 ❯ proteuscmd dns get lktest.uni-osnabrueck.de
 ```
 
-Set an alias record:
+## Shell Completion
+
+The `proteuscmd` command line tool supports shell completion for several major shells:
+
+For **Bash**, add to `~/.bashrc`:
+
 ```
-❯ proteuscmd dns set lktest.uni-osnabrueck.de vm123.rz.uni-osnabrueck.de
+eval "$(_PROTEUSCMD_COMPLETE=bash_source proteuscmd)"
 ```
 
-Set a host record:
+For **ZSH**, add to `~/.zshrc`:
+
 ```
-❯ proteuscmd dns set lktest.uni-osnabrueck.de 131.12.65.123
+eval "$(_PROTEUSCMD_COMPLETE=zsh_source proteuscmd)"
 ```
 
-Delete a record:
+For **fish**, add to `~/.config/fish/completions/proteuscmd.fish`:
+
 ```
-❯ proteuscmd dns delete lktest.uni-osnabrueck.de
+_PROTEUSCMD_COMPLETE=fish_source proteuscmd | source
 ```
