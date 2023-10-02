@@ -12,7 +12,7 @@ def read(filename):
 
 setup(
     name='proteuscmd',
-    version='0.6',
+    version='0.7',
     description=description_text,
     url='https://github.com/virtUOS/proteuscmd',
     author='Lars Kiesow',
