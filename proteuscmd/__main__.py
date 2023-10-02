@@ -6,6 +6,12 @@ from proteuscmd.config import proteus_from_config
 from proteuscmd.types import IPV4_TYPE, IP_STATE_TYPE, VIEW_TYPE
 
 
+__view_args = {
+        'default': 'all',
+        'type': VIEW_TYPE,
+        'help': 'DNS view structure to operate in'}
+
+
 def with_proteus(f):
     '''Provide a Proteus client as first parameter of the wraped function.
     Print the result if one exists.
@@ -28,7 +34,6 @@ def cli():
 def dns():
     '''Get information about or update DNS entries.
     '''
-    pass
 
 
 @cli.group()
@@ -38,7 +43,7 @@ def ip():
 
 
 @dns.command(name='get')
-@click.option('--view', default='all', type=VIEW_TYPE)
+@click.option('--view', **__view_args)
 @click.argument('domain')
 @with_proteus
 def dns_get(proteus, view, domain):
@@ -49,7 +54,7 @@ def dns_get(proteus, view, domain):
 
 
 @dns.command(name='set')
-@click.option('--view', default='all', type=VIEW_TYPE)
+@click.option('--view', **__view_args)
 @click.argument('domain')
 @click.argument('target', type=IPV4_TYPE)
 @with_proteus
@@ -65,7 +70,7 @@ def dns_set(proteus, view, domain, target):
 
 
 @dns.command(name='delete')
-@click.option('--view', default='all', type=VIEW_TYPE)
+@click.option('--view', **__view_args)
 @click.argument('domain')
 @with_proteus
 def dns_delete(proteus, view, domain):
@@ -92,15 +97,23 @@ def ip_get(proteus, ip):
 
 
 @ip.command(name='set')
-@click.option('--admin-email', '-e', required=True)
-@click.option('--admin-name', '-n', required=True)
-@click.option('--admin-phone', '-p', required=True)
-@click.option('--comment', '-c')
-@click.option('--state', '-s', default='DHCP_RESERVED', type=IP_STATE_TYPE)
-@click.option('--hostname', '-h')
-@click.option('--view', default='all', type=VIEW_TYPE)
-@click.option('--prop', default=[], multiple=True)
-@click.option('--force/--no-force', default=False, type=bool)
+@click.option('--admin-email', '-e', required=True,
+              help='Email address of the host admin')
+@click.option('--admin-name', '-n', required=True,
+              help='Name of the host admin')
+@click.option('--admin-phone', '-p', required=True,
+              help='Phone number of the host admin')
+@click.option('--comment', '-c',
+              help='Comment to add to the address registration')
+@click.option('--state', '-s', default='DHCP_RESERVED', type=IP_STATE_TYPE,
+              help='Type of IP assignment')
+@click.option('--hostname', '-h',
+              help='Hostname to add as DNS record for the assigned IP address')
+@click.option('--view', **__view_args)
+@click.option('--prop', default=[], multiple=True,
+              help='Additional properties in the form of property=value')
+@click.option('--force/--no-force', default=False, type=bool,
+              help='If to overwrite existing IP assignments')
 @click.argument('ip', type=IPV4_TYPE)
 @click.argument('mac')
 @with_proteus
