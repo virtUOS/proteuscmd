@@ -3,9 +3,7 @@ import json
 
 from functools import wraps
 from proteuscmd.config import proteus_from_config
-
-__views = click.Choice(('intern', 'extern', 'all'), case_sensitive=False)
-__ip_states = click.Choice(('STATIC', 'DHCP_RESERVED'), case_sensitive=False)
+from proteuscmd.types import IPV4_TYPE, IP_STATE_TYPE, VIEW_TYPE
 
 
 def with_proteus(f):
@@ -40,7 +38,7 @@ def ip():
 
 
 @dns.command(name='get')
-@click.option('--view', default='all', type=__views)
+@click.option('--view', default='all', type=VIEW_TYPE)
 @click.argument('domain')
 @with_proteus
 def dns_get(proteus, view, domain):
@@ -51,9 +49,9 @@ def dns_get(proteus, view, domain):
 
 
 @dns.command(name='set')
-@click.option('--view', default='all', type=__views)
+@click.option('--view', default='all', type=VIEW_TYPE)
 @click.argument('domain')
-@click.argument('target')
+@click.argument('target', type=IPV4_TYPE)
 @with_proteus
 def dns_set(proteus, view, domain, target):
     '''Set DNS record in Proteus
@@ -67,7 +65,7 @@ def dns_set(proteus, view, domain, target):
 
 
 @dns.command(name='delete')
-@click.option('--view', default='all', type=__views)
+@click.option('--view', default='all', type=VIEW_TYPE)
 @click.argument('domain')
 @with_proteus
 def dns_delete(proteus, view, domain):
@@ -79,7 +77,7 @@ def dns_delete(proteus, view, domain):
 
 
 @ip.command(name='get')
-@click.argument('ip')
+@click.argument('ip', type=IPV4_TYPE)
 @with_proteus
 def ip_get(proteus, ip):
     '''Get information about IPv4 address
@@ -98,12 +96,12 @@ def ip_get(proteus, ip):
 @click.option('--admin-name', '-n', required=True)
 @click.option('--admin-phone', '-p', required=True)
 @click.option('--comment', '-c')
-@click.option('--state', '-s', default='DHCP_RESERVED', type=__ip_states)
+@click.option('--state', '-s', default='DHCP_RESERVED', type=IP_STATE_TYPE)
 @click.option('--hostname', '-h')
-@click.option('--view', default='all', type=__views)
+@click.option('--view', default='all', type=VIEW_TYPE)
 @click.option('--prop', default=[], multiple=True)
 @click.option('--force/--no-force', default=False, type=bool)
-@click.argument('ip')
+@click.argument('ip', type=IPV4_TYPE)
 @click.argument('mac')
 @with_proteus
 def ip_set(proteus, admin_email, admin_name, admin_phone, comment, state,
@@ -138,7 +136,7 @@ def ip_set(proteus, admin_email, admin_name, admin_phone, comment, state,
 
 
 @ip.command(name='delete')
-@click.argument('ip')
+@click.argument('ip', type=IPV4_TYPE)
 @with_proteus
 def ip_delete(proteus, ip):
     '''Delete assigned IPv4 address
