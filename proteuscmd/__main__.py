@@ -97,6 +97,8 @@ def ip_get(proteus, ip):
 
 
 @ip.command(name='set')
+@click.option('--name', required=False,
+              help='Name of the host. Defaults to hostname if set.')
 @click.option('--admin-email', '-e', required=True,
               help='Email address of the host admin')
 @click.option('--admin-name', '-n', required=True,
@@ -117,7 +119,7 @@ def ip_get(proteus, ip):
 @click.argument('ip', type=IPV4_TYPE)
 @click.argument('mac')
 @with_proteus
-def ip_set(proteus, admin_email, admin_name, admin_phone, comment, state,
+def ip_set(proteus, name, admin_email, admin_name, admin_phone, comment, state,
            hostname, view, prop, force, ip, mac):
     '''Assign IPv4 address
     '''
@@ -139,6 +141,9 @@ def ip_set(proteus, admin_email, admin_name, admin_phone, comment, state,
              'admin_name': admin_name,
              'admin_phone': admin_phone,
              'comment': comment}
+    if name or hostname:
+        # Name defaults to hostname
+        props['name'] = name or hostname
     for extra_prop in prop:
         k, v = extra_prop.split('=', 1)
         props[k] = v
