@@ -56,7 +56,7 @@ def dns_get(proteus, view, domain):
 @dns.command(name='set')
 @click.option('--view', **__view_args)
 @click.argument('domain')
-@click.argument('target', type=IPV4_TYPE)
+@click.argument('target')
 @with_proteus
 def dns_set(proteus, view, domain, target):
     '''Set DNS record in Proteus
