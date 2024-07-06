@@ -71,11 +71,16 @@ def dns_set(proteus, view, domain, target):
 
 @dns.command(name='delete')
 @click.option('--view', **__view_args)
+@click.option('--force/--no-force', default=False, type=bool,
+              help='Force will skip any additional confirmation.')
 @click.argument('domain')
 @with_proteus
-def dns_delete(proteus, view, domain):
+def dns_delete(proteus, view, force, domain):
     '''Delete DNS record in Proteus
     '''
+    if not force:
+        click.confirm(f'Do you really want do delete {domain}?', abort=True)
+
     views = proteus.get_requested_views(view)
     for name, view in views:
         proteus.delete_record(view, domain)
@@ -154,11 +159,16 @@ def ip_set(proteus, name, admin_email, admin_name, admin_phone, comment, state,
 
 
 @ip.command(name='delete')
+@click.option('--force/--no-force', default=False, type=bool,
+              help='Force will skip any additional confirmation.')
 @click.argument('ip', type=IPV4_TYPE)
 @with_proteus
-def ip_delete(proteus, ip):
+def ip_delete(proteus, force, ip):
     '''Delete assigned IPv4 address
     '''
+    if not force:
+        click.confirm(f'Do you really want do delete {ip}?', abort=True)
+
     # get notwork information
     data = proteus.get_entities_by_name('default', 0, 'Configuration')
     conf_id = data[0]['id']
