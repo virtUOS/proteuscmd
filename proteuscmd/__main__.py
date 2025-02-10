@@ -1,9 +1,11 @@
 import click
+import ipaddress
 import json
 
 from functools import wraps
-from proteuscmd.config import proteus_from_config
-from proteuscmd.types import IPV4_TYPE, IP_STATE_TYPE, VIEW_TYPE
+from proteuscmd.api import Proteus
+from proteuscmd.config import proteus_from_config, config
+from proteuscmd.types import IP_TYPE, IP_STATE_TYPE, VIEW_TYPE
 
 
 __view_args = {
@@ -23,6 +25,22 @@ def with_proteus(f):
         if data:
             print(json.dumps(data, indent=2))
     return decorated
+
+
+def get_mapped_ip(ip):
+    '''Use the mapping configuration to map between IPv4 and IPv6 addresses.
+    '''
+    for ip_map in (config('v4_v6_map') or []):
+        ipv4_network = ipaddress.IPv4Network(ip_map['cidr'])
+        ipv6_network = ipaddress.IPv6Network(ip_map['prefix'])
+        if ip.version == 4 and ip in ipv4_network:
+            int_network_address = int(ipv6_network.network_address)
+            int_ip_address = int(ip.ipv6_mapped) & 0xFFFFFFFF
+            return ipaddress.IPv6Address(int_network_address | int_ip_address)
+        if ip.version == 6 and ip in ipv6_network:
+            ipv4_int = int(ip) & 0xFFFFFFFF
+            return ipaddress.IPv4Address(ipv4_int)
+    raise ValueError(f'No mapping found for IP {ip.compressed}')
 
 
 @click.group()
@@ -46,7 +64,7 @@ def ip():
 @click.option('--view', **__view_args)
 @click.argument('domain')
 @with_proteus
-def dns_get(proteus, view, domain):
+def dns_get(proteus: Proteus, view, domain):
     '''Get information about a DNS recotd.
     '''
     views = proteus.get_requested_views(view)
@@ -58,7 +76,7 @@ def dns_get(proteus, view, domain):
 @click.argument('domain')
 @click.argument('target')
 @with_proteus
-def dns_set(proteus, view, domain, target):
+def dns_set(proteus: Proteus, view, domain, target):
     '''Set DNS record in Proteus
     '''
     views = proteus.get_requested_views(view)
@@ -75,7 +93,7 @@ def dns_set(proteus, view, domain, target):
               help='Force will skip any additional confirmation.')
 @click.argument('domain')
 @with_proteus
-def dns_delete(proteus, view, force, domain):
+def dns_delete(proteus: Proteus, view, force,  domain):
     '''Delete DNS record in Proteus
     '''
     if not force:
@@ -87,18 +105,24 @@ def dns_delete(proteus, view, force, domain):
 
 
 @ip.command(name='get')
-@click.argument('ip', type=IPV4_TYPE)
+@click.option('--version', required=False, type=int,
+              help='IP version to use. '
+              'Will use the mapping configuration if necessary.')
+@click.argument('ip', type=IP_TYPE)
 @with_proteus
-def ip_get(proteus, ip):
+def ip_get(proteus: Proteus, version, ip):
     '''Get information about IPv4 address
     '''
     data = proteus.get_entities_by_name('default', 0, 'Configuration')
     conf_id = data[0]['id']
 
-    data = proteus.get_ip_range_by_ip(ip, conf_id)
-    range_id = data["id"]
+    # Map between IPv4 and IPv6 if necessary
+    if version and version != ip.version:
+        ip = get_mapped_ip(ip)
 
-    return proteus.get_ip4_address(ip, range_id)
+    data = proteus.get_container_by_ip(ip, conf_id)
+    container_id = data["id"]
+    return proteus.get_ip_address(ip, container_id)
 
 
 @ip.command(name='set')
@@ -121,25 +145,32 @@ def ip_get(proteus, ip):
               help='Additional properties in the form of property=value')
 @click.option('--force/--no-force', default=False, type=bool,
               help='If to overwrite existing IP assignments')
-@click.argument('ip', type=IPV4_TYPE)
+@click.option('--version', required=False, type=int,
+              help='IP version to use. '
+              'Will use the mapping configuration if necessary.')
+@click.argument('ip', type=IP_TYPE)
 @click.argument('mac')
 @with_proteus
-def ip_set(proteus, name, admin_email, admin_name, admin_phone, comment, state,
-           hostname, view, prop, force, ip, mac):
-    '''Assign IPv4 address
+def ip_set(proteus: Proteus, name, admin_email, admin_name, admin_phone,
+           comment, state, hostname, view, prop, force, version, ip, mac):
+    '''Assign IPv4 or IPv6 address
     '''
     # get notwork information
     data = proteus.get_entities_by_name('default', 0, 'Configuration')
     conf_id = data[0]['id']
-    range_id = proteus.get_ip_range_by_ip(ip, conf_id)['id']
+
+    # Map between IPv4 and IPv6 if necessary
+    if version and version != ip.version:
+        ip = get_mapped_ip(ip)
+
+    container_id = proteus.get_container_by_ip(ip, conf_id)['id']
 
     # check if ip is already reserved
-    existing_address = proteus.get_ip4_address(ip, range_id)
+    existing_address = proteus.get_ip_address(ip, container_id)
     if existing_address['id']:
-        if force:
-            proteus.delete_ip4_address(ip, range_id)
-        else:
+        if not force:
             raise ValueError('IP already reserved')
+        proteus.delete_ip_address(ip, container_id)
 
     # prepare properties
     props = {'admin_email': admin_email,
@@ -154,27 +185,49 @@ def ip_set(proteus, name, admin_email, admin_name, admin_phone, comment, state,
         props[k] = v
     props = {k: v for k, v in props.items() if v}
 
-    proteus.assign_ip_address(conf_id, state, ip, mac, props, hostname, view)
-    return proteus.get_ip4_address(ip, range_id)
+    if ip.version == 4:
+        proteus.assign_ip4_address(conf_id, state, ip, mac, props,
+                                   hostname, view)
+    else:
+        proteus.assign_ip6_address(container_id, state, ip, mac, props,
+                                   hostname, view)
+    return proteus.get_ip_address(ip, container_id)
 
 
 @ip.command(name='delete')
 @click.option('--force/--no-force', default=False, type=bool,
               help='Force will skip any additional confirmation.')
-@click.argument('ip', type=IPV4_TYPE)
+@click.option('--version', required=False, type=int,
+              help='IP version to use. '
+              'Will use the mapping configuration if necessary.')
+@click.argument('ip', type=IP_TYPE)
 @with_proteus
-def ip_delete(proteus, force, ip):
-    '''Delete assigned IPv4 address
+def ip_delete(proteus: Proteus, force, version, ip):
+    '''Delete assigned IPv4 or IPv6 address
     '''
+    # Map between IPv4 and IPv6 if necessary
+    if version and version != ip.version:
+        ip = get_mapped_ip(ip)
+
     if not force:
         click.confirm(f'Do you really want do delete {ip}?', abort=True)
 
     # get notwork information
     data = proteus.get_entities_by_name('default', 0, 'Configuration')
     conf_id = data[0]['id']
-    range_id = proteus.get_ip_range_by_ip(ip, conf_id)['id']
+    container_id = proteus.get_container_by_ip(ip, conf_id)['id']
 
-    proteus.delete_ip4_address(ip, range_id)
+    proteus.delete_ip_address(ip, container_id)
+
+
+@ip.command(name='map')
+@click.argument('ip', type=IP_TYPE)
+def ip_map(ip):
+    '''Map between IPv4 and IPv6 addresses.
+    '''
+    mapped = get_mapped_ip(ip)
+    if mapped:
+        print(mapped.compressed)
 
 
 def main():

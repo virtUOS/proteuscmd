@@ -46,7 +46,7 @@ class Proteus:
         return response.json()
 
     def __delete(self, path, params):
-        return requests.delete(self.__url('delete'),
+        return requests.delete(self.__url(path),
                                params=params,
                                headers=self.__auth_header,
                                timeout=30)
@@ -108,8 +108,8 @@ class Proteus:
                   'type': object_type}
         return self.__get('getEntities', params)
 
-    def assign_ip_address(self, conf_id, status, ip, mac, properties,
-                          hostname=None, view=None):
+    def assign_ip4_address(self, conf_id, status, ip, mac, properties,
+                           hostname=None, view=None):
         status = status.upper()
         if status not in ['STATIC', 'RESERVED', 'DHCP_RESERVED']:
             raise Exception(f'Invalid status: {status}')
@@ -128,21 +128,65 @@ class Proteus:
             params['hostInfo'] = hosts
         return self.__post('assignIP4Address', params)
 
-    def get_ip_range_by_ip(self, ip, conf_id):
-        params = {'address': ip,
+    def assign_ip6_address(self, container_id, status, ip, mac, properties,
+                           hostname=None, view=None):
+        if ip.version != 6:
+            raise TypeError(f'Address must be IPv6: {ip}')
+
+        status = status.upper()
+        if status not in ['STATIC', 'DHCP_RESERVED']:
+            raise Exception(f'Invalid status: {status}')
+
+        # IPv4 properties contain the address name
+        # IPv6 uses a separate field *arrgh!!*
+        props = '|'.join([
+            f'{k}={v}'
+            for k, v in properties.items()
+            if k != 'name'])
+
+        # We need to create the IPv6 address before assigning it
+        params = {'address': ip.compressed,
+                  'containerId': container_id,
+                  'properties': props,
+                  'type': 'IP6Address'}
+        if properties.get('name'):
+            params['name'] = properties['name']
+        self.__post('addIP6Address', params)
+
+        # Assign newly created IPv6 address
+        props = f'{props}|reserveUsing=MAC_ADDRESS'
+        params = {'action': f'MAKE_{status}',
+                  'address': ip.compressed,
+                  'containerId': container_id,
+                  'macAddress': mac,
+                  'properties': props}
+        # Also pass along hostname information
+        if hostname and view:
+            result = []
+            for view_id in [x[1] for x in self.get_requested_views(view)]:
+                host_info = f'{view_id},{hostname},false,true'
+                params['hostInfo'] = host_info
+                result.append(self.__post('assignIP6Address', params))
+            return result
+        else:
+            return self.__post('assignIP6Address', params)
+
+    def get_container_by_ip(self, address, conf_id):
+        params = {'address': address.compressed,
                   'containerId': conf_id,
-                  'type': 'IP4Network'}
+                  'type': f'IP{address.version}Network'}
+        # https://docs.bluecatnetworks.com/r/Address-Manager-API-Guide/GET/v1/getIPRangedByIP/9.3.0
         return self.__get('getIPRangedByIP', params=params)
 
-    def get_ip4_address(self, ip, range_id):
-        params = {'address': ip, 'containerId': range_id}
-        data = self.__get('getIP4Address', params=params)
+    def get_ip_address(self, ip, container_id):
+        params = {'address': ip.compressed, 'containerId': container_id}
+        data = self.__get(f'getIP{ip.version}Address', params=params)
         if data.get('properties'):
             data['properties'] = self.__parse_properties(data['properties'])
         return data
 
-    def delete_ip4_address(self, ip, range_id):
-        object_id = self.get_ip4_address(ip, range_id)['id']
+    def delete_ip_address(self, ip, container_id):
+        object_id = self.get_ip_address(ip, container_id)['id']
         payload = {'objectId': object_id}
         return self.__delete('delete', payload)
 
