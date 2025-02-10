@@ -3,28 +3,28 @@ import ipaddress
 import socket
 
 
-class IPv4Type(click.ParamType):
-    '''Click parameter type for IPv4 address.
-    Also accepts domain names if they can be resolved to an IPv4 address.
+class IPType(click.ParamType):
+    '''Click parameter type for IPv4 or IPv6 address.
+    Also accepts domain names if they can be resolved to an IP address.
     '''
-    name = 'IPv4 address'
+    name = 'IPv4 or IPv6 address'
 
     def convert(self, value, param, ctx):
         try:
-            ipaddress.IPv4Address(value)
-            return value
+            return ipaddress.ip_address(value)
         except ipaddress.AddressValueError:
             pass
 
         try:
-            return socket.gethostbyname(value)
+            return ipaddress.ip_address(socket.gethostbyname(value))
         except socket.gaierror:
             pass
 
-        self.fail(f'{value!r} cannot be resolved to IPv4 address', param, ctx)
+        self.fail(f'{value!r} cannot be resolved to IPv4 or IPv6 address',
+                  param, ctx)
 
 
-IPV4_TYPE = IPv4Type()
+IP_TYPE = IPType()
 
 VIEW_TYPE = click.Choice(('intern', 'extern', 'all'), case_sensitive=False)
 

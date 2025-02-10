@@ -21,7 +21,7 @@ Configure access credentials in `~/.proteus.json`:
 }
 ```
 
-Additionally, you can specify a map of automatic replacements for domains.
+You can also specify a map of automatic replacements for domains.
 This can be useful if, for example, all your domains also have an alternate domain with a `DNAME` record.
 ```json
 {
@@ -31,6 +31,19 @@ This can be useful if, for example, all your domains also have an alternate doma
 	}
 }
 ```
+
+Furthermore, you can configure maps between IPv4 and IPv6 networks:
+```json
+{
+    ...
+    "v4_v6_map": [
+        {
+            "cidr": "192.168.22.0/23",
+            "prefix": "2001:123:456:789::/64"
+        }
+    ]
+```
+
 
 ## Usage
 
