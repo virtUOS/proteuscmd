@@ -74,9 +74,9 @@ def dns_get(proteus: Proteus, view, domain):
 @dns.command(name='set')
 @click.option('--view', **__view_args)
 @click.argument('domain')
-@click.argument('target')
+@click.argument('target', nargs=-1, required=True)
 @with_proteus
-def dns_set(proteus: Proteus, view, domain, target):
+def dns_set(proteus: Proteus, view, domain, target: list[str]):
     '''Set DNS record in Proteus
     '''
     views = proteus.get_requested_views(view)
