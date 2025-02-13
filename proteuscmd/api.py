@@ -43,6 +43,8 @@ class Proteus:
                                 params=params,
                                 headers=self.__auth_header,
                                 timeout=30)
+        if response.status_code >= 300:
+            raise Exception(f'Error from requesting {path}: {response.text}')
         return response.json()
 
     def __delete(self, path, params):
