@@ -2,6 +2,20 @@ import click
 import ipaddress
 import socket
 
+from proteuscmd.config import config
+
+
+class ConfigOption(click.Option):
+    def handle_parse_result(self, ctx, opts, args):
+        # If the option is not provided in the command line,
+        # try to get it from the global config
+        if self.name and self.name not in opts and config(self.name):
+            opts = dict(opts)
+            opts[self.name] = config(self.name)
+
+        # Call the parent class's handle_parse_result to continue
+        return super(ConfigOption, self).handle_parse_result(ctx, opts, args)
+
 
 class IPType(click.ParamType):
     '''Click parameter type for IPv4 or IPv6 address.

@@ -32,7 +32,7 @@ This can be useful if, for example, all your domains also have an alternate doma
 }
 ```
 
-Furthermore, you can configure maps between IPv4 and IPv6 networks:
+You can configure maps between IPv4 and IPv6 networks:
 ```json
 {
     ...
@@ -42,6 +42,16 @@ Furthermore, you can configure maps between IPv4 and IPv6 networks:
             "prefix": "2001:123:456:789::/64"
         }
     ]
+```
+
+Finally, you can configure default values for admin information.
+You can still overwrite them on the command line if needed.
+```json
+{
+    ...
+    "admin_email": "someone@example.com",
+    "admin_name": "John Doe",
+    "admin_phone": "1234"
 ```
 
 

@@ -5,7 +5,7 @@ import json
 from functools import wraps
 from proteuscmd.api import Proteus
 from proteuscmd.config import proteus_from_config, config
-from proteuscmd.types import IP_TYPE, IP_STATE_TYPE, VIEW_TYPE
+from proteuscmd.types import IP_TYPE, IP_STATE_TYPE, VIEW_TYPE, ConfigOption
 
 
 __view_args = {
@@ -128,11 +128,11 @@ def ip_get(proteus: Proteus, version, ip):
 @ip.command(name='set')
 @click.option('--name', required=False,
               help='Name of the host. Defaults to hostname if set.')
-@click.option('--admin-email', '-e', required=True,
+@click.option('--admin-email', '-e', cls=ConfigOption, required=True,
               help='Email address of the host admin')
-@click.option('--admin-name', '-n', required=True,
+@click.option('--admin-name', '-n', cls=ConfigOption, required=True,
               help='Name of the host admin')
-@click.option('--admin-phone', '-p', required=True,
+@click.option('--admin-phone', '-p', cls=ConfigOption, required=True,
               help='Phone number of the host admin')
 @click.option('--comment', '-c',
               help='Comment to add to the address registration')
