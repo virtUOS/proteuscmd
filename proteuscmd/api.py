@@ -57,15 +57,18 @@ class Proteus:
         fragments = list(filter(bool, domain.split('.')[::-1]))
         return fragments[:-1], fragments[-1]
 
-    def __record_type_from_target(self, target):
+    def __record_type_from_target(self, targets):
         '''Return type of record based on the target.
         HostRecord if the target is an IP address,
         AliasRecord if it is a domain
         '''
         try:
-            ipaddress.ip_address(target)
+            for target in targets:
+                ipaddress.ip_address(target)
             return 'HostRecord'
         except ValueError:
+            if len(targets) != 1:
+                raise ValueError('Multiple targets must all be IP addresses')
             return 'AliasRecord'
 
     def __parse_properties(self, properties):
@@ -233,20 +236,20 @@ class Proteus:
             return self.__parse_properties(record['properties'])
         return {}
 
-    def set_record(self, view, domain, target):
+    def set_record(self, view, domain, targets):
 
-        record_type = self.__record_type_from_target(target)
+        record_type = self.__record_type_from_target(targets)
 
         if record_type == 'HostRecord':
             params = {'absoluteName': domain,
-                      'addresses': target,
+                      'addresses': ','.join(targets),
                       'ttl': -1,
                       'viewId': view}
             return self.__post('addHostRecord', params)
 
         else:  # add aliias record
             params = {'absoluteName': domain,
-                      'linkedRecordName': target,
+                      'linkedRecordName': targets[0],
                       'ttl': -1,
                       'viewId': view}
             return self.__post('addAliasRecord', params)
