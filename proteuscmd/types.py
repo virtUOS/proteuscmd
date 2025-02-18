@@ -12,7 +12,7 @@ class IPType(click.ParamType):
     def convert(self, value, param, ctx):
         try:
             return ipaddress.ip_address(value)
-        except ipaddress.AddressValueError:
+        except ValueError:
             pass
 
         try:
