@@ -1,8 +1,11 @@
 import click
 import ipaddress
 import json
+import requests
 
 from functools import wraps
+
+from proteuscmd import version
 from proteuscmd.api import Proteus
 from proteuscmd.config import proteus_from_config, config
 from proteuscmd.types import IP_TYPE, IP_STATE_TYPE, VIEW_TYPE, ConfigOption
@@ -58,6 +61,21 @@ def dns():
 def ip():
     '''Register IP addresses.
     '''
+
+
+@cli.command(name='version')
+def print_version():
+    '''Print the version of proteuscmd
+    '''
+    print(f'proteuscmd {version}')
+    try:
+        url = f'https://pypi.org/pypi/proteuscmd/{version}/json'
+        json = requests.get(url, timeout=2).json()
+        upload_time = json.get('urls', [{}])[0].get('upload_time')
+        if upload_time:
+            print(f'  released {upload_time}')
+    except IOError:
+        pass
 
 
 @dns.command(name='get')
