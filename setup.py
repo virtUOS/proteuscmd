@@ -1,5 +1,6 @@
 from setuptools import setup
 import os
+import proteuscmd
 
 description_text = 'A command line interface to modify DNS entries in Proteus.'
 
@@ -12,7 +13,7 @@ def read(filename):
 
 setup(
     name='proteuscmd',
-    version='1.0',
+    version=proteuscmd.version,
     description=description_text,
     url='https://github.com/virtUOS/proteuscmd',
     author='Lars Kiesow',
