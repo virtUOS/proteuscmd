@@ -21,6 +21,18 @@ Configure access credentials in `~/.proteus.json`:
 }
 ```
 
+Instead of putting in a plaintext password, you can also specify a command to run for getting the password.
+This way, you can e.g. extract the password from a password manager:
+```json
+{
+	"user": "api-user",
+	"password_cmd": ["gopass", "show", "-o", "/my/proteus/pass"],
+	"url": "https://proteus.example.com"
+}
+```
+
+The comand can be set either as an array, or as a shell string.
+
 You can also specify a map of automatic replacements for domains.
 This can be useful if, for example, all your domains also have an alternate domain with a `DNAME` record.
 ```json
