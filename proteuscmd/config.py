@@ -1,5 +1,6 @@
 import json
 import pathlib
+import subprocess  # nosec blacklist
 
 from proteuscmd.api import Proteus
 
@@ -20,5 +21,13 @@ def config(key: str):
 def proteus_from_config():
     '''Load configuration file and use it to initialize the proteus client.
     '''
-    cfg = config('user'), config('password'), config('url'), config('replace')
+    password = config('password')
+    if not password:
+        password_cmd = config('password_cmd')
+        password = subprocess.run(password_cmd,  # nosec B602
+                                  shell=type(password_cmd) is str,
+                                  capture_output=True,
+                                  text=True,
+                                  check=True).stdout
+    cfg = config('user'), password, config('url'), config('replace')
     return Proteus(*cfg)
