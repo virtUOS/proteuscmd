@@ -43,3 +43,5 @@ IP_TYPE = IPType()
 VIEW_TYPE = click.Choice(('intern', 'extern', 'all'), case_sensitive=False)
 
 IP_STATE_TYPE = click.Choice(('STATIC', 'DHCP_RESERVED'), case_sensitive=False)
+
+IP_VERSION_CHOICE = click.Choice(('4', '6', 'both'), case_sensitive=False)
