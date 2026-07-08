@@ -86,6 +86,23 @@ Get information about a DNS record:
 ❯ proteuscmd dns get lktest.uni-osnabrueck.de
 ```
 
+The `ip get`, `ip set`, and `ip delete` commands support a `--version` option to control which IP version to operate on. You can use `4`, `6`, or `both`. When `--version both` is specified, the command will execute for both IPv4 and IPv6 simultaneously using the v4/v6 mapping configuration:
+
+```
+# Get IP info for both IPv4 and IPv6
+❯ proteuscmd ip get 192.168.1.1 --version both
+{
+  "v4": { "id": "...", "address": "192.168.1.1", ... },
+  "v6": { "id": "...", "address": "2001:db8::1", ... }
+}
+
+# Assign an IP to both IPv4 and IPv6
+❯ proteuscmd ip set 192.168.1.1 AA:BB:CC:DD:EE:FF --version both -e admin@example.com -n Admin -p 555-1234
+
+# Delete an IP assignment for both IPv4 and IPv6
+❯ proteuscmd ip delete 192.168.1.1 --version both
+```
+
 ## Shell Completion
 
 The `proteuscmd` command line tool supports shell completion for several major shells:

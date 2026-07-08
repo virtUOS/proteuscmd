@@ -8,7 +8,10 @@ from functools import wraps
 from proteuscmd import version
 from proteuscmd.api import Proteus
 from proteuscmd.config import proteus_from_config, config
-from proteuscmd.types import IP_TYPE, IP_STATE_TYPE, VIEW_TYPE, ConfigOption
+from proteuscmd.types import (
+    IP_TYPE, IP_STATE_TYPE, VIEW_TYPE,
+    ConfigOption, IP_VERSION_CHOICE,
+)
 
 
 __view_args = {
@@ -122,8 +125,23 @@ def dns_delete(proteus: Proteus, view, force,  domain):
         proteus.delete_record(view, domain)
 
 
+def _ip_get_for_version(proteus, ip, version):
+    """Get IP address info for a specific version, handling IP mapping."""
+    if version:
+        version_int = int(version)
+        if version_int != ip.version:
+            ip = get_mapped_ip(ip)
+
+    data = proteus.get_entities_by_name('default', 0, 'Configuration')
+    conf_id = data[0]['id']
+
+    data = proteus.get_container_by_ip(ip, conf_id)
+    container_id = data["id"]
+    return proteus.get_ip_address(ip, container_id)
+
+
 @ip.command(name='get')
-@click.option('--version', required=False, type=int,
+@click.option('--version', required=False, type=IP_VERSION_CHOICE,
               help='IP version to use. '
               'Will use the mapping configuration if necessary.')
 @click.argument('ip', type=IP_TYPE)
@@ -131,55 +149,30 @@ def dns_delete(proteus: Proteus, view, force,  domain):
 def ip_get(proteus: Proteus, version, ip):
     '''Get information about IPv4 address
     '''
+    if version == 'both':
+        return {
+            'v4': _ip_get_for_version(proteus, ip, 4),
+            'v6': _ip_get_for_version(proteus, ip, 6),
+        }
+    return _ip_get_for_version(proteus, ip, version)
+
+
+def _ip_set_for_version(proteus, name, admin_email, admin_name, admin_phone,
+                        comment, state, hostname, view, prop, force,
+                        ip, mac, version=None):
+    """Assign an IP address for a specific version, handling IP mapping.
+
+    If `version` differs from the IP's actual version, the IP is mapped.
+    """
+    # Map between IPv4 and IPv6 if necessary
+    if version:
+        version_int = int(version)
+        if version_int != ip.version:
+            ip = get_mapped_ip(ip)
+
+    # get network information
     data = proteus.get_entities_by_name('default', 0, 'Configuration')
     conf_id = data[0]['id']
-
-    # Map between IPv4 and IPv6 if necessary
-    if version and version != ip.version:
-        ip = get_mapped_ip(ip)
-
-    data = proteus.get_container_by_ip(ip, conf_id)
-    container_id = data["id"]
-    return proteus.get_ip_address(ip, container_id)
-
-
-@ip.command(name='set')
-@click.option('--name', required=False,
-              help='Name of the host. Defaults to hostname if set.')
-@click.option('--admin-email', '-e', cls=ConfigOption, required=True,
-              help='Email address of the host admin')
-@click.option('--admin-name', '-n', cls=ConfigOption, required=True,
-              help='Name of the host admin')
-@click.option('--admin-phone', '-p', cls=ConfigOption, required=True,
-              help='Phone number of the host admin')
-@click.option('--comment', '-c',
-              help='Comment to add to the address registration')
-@click.option('--state', '-s', default='DHCP_RESERVED', type=IP_STATE_TYPE,
-              help='Type of IP assignment')
-@click.option('--hostname', '-h',
-              help='Hostname to add as DNS record for the assigned IP address')
-@click.option('--view', **__view_args)
-@click.option('--prop', default=[], multiple=True,
-              help='Additional properties in the form of property=value')
-@click.option('--force/--no-force', default=False, type=bool,
-              help='If to overwrite existing IP assignments')
-@click.option('--version', required=False, type=int,
-              help='IP version to use. '
-              'Will use the mapping configuration if necessary.')
-@click.argument('ip', type=IP_TYPE)
-@click.argument('mac')
-@with_proteus
-def ip_set(proteus: Proteus, name, admin_email, admin_name, admin_phone,
-           comment, state, hostname, view, prop, force, version, ip, mac):
-    '''Assign IPv4 or IPv6 address
-    '''
-    # get notwork information
-    data = proteus.get_entities_by_name('default', 0, 'Configuration')
-    conf_id = data[0]['id']
-
-    # Map between IPv4 and IPv6 if necessary
-    if version and version != ip.version:
-        ip = get_mapped_ip(ip)
 
     container_id = proteus.get_container_by_ip(ip, conf_id)['id']
 
@@ -212,10 +205,77 @@ def ip_set(proteus: Proteus, name, admin_email, admin_name, admin_phone,
     return proteus.get_ip_address(ip, container_id)
 
 
+@ip.command(name='set')
+@click.option('--name', required=False,
+              help='Name of the host. Defaults to hostname if set.')
+@click.option('--admin-email', '-e', cls=ConfigOption, required=True,
+              help='Email address of the host admin')
+@click.option('--admin-name', '-n', cls=ConfigOption, required=True,
+              help='Name of the host admin')
+@click.option('--admin-phone', '-p', cls=ConfigOption, required=True,
+              help='Phone number of the host admin')
+@click.option('--comment', '-c',
+              help='Comment to add to the address registration')
+@click.option('--state', '-s', default='DHCP_RESERVED', type=IP_STATE_TYPE,
+              help='Type of IP assignment')
+@click.option('--hostname', '-h',
+              help='Hostname to add as DNS record for the assigned IP address')
+@click.option('--view', **__view_args)
+@click.option('--prop', default=[], multiple=True,
+              help='Additional properties in the form of property=value')
+@click.option('--force/--no-force', default=False, type=bool,
+              help='If to overwrite existing IP assignments')
+@click.option('--version', required=False, type=IP_VERSION_CHOICE,
+              help='IP version to use. '
+              'Will use the mapping configuration if necessary.')
+@click.argument('ip', type=IP_TYPE)
+@click.argument('mac')
+@with_proteus
+def ip_set(proteus: Proteus, name, admin_email, admin_name, admin_phone,
+           comment, state, hostname, view, prop, force, version, ip, mac):
+    '''Assign IPv4 or IPv6 address
+    '''
+    if version == 'both':
+        return {
+            'v4': _ip_set_for_version(proteus, name, admin_email, admin_name,
+                                      admin_phone, comment, state, hostname,
+                                      view, prop, force, ip, mac, 4),
+            'v6': _ip_set_for_version(proteus, name, admin_email, admin_name,
+                                      admin_phone, comment, state, hostname,
+                                      view, prop, force, ip, mac, 6),
+        }
+    return _ip_set_for_version(proteus, name, admin_email, admin_name,
+                               admin_phone, comment, state, hostname, view,
+                               prop, force, ip, mac, version)
+
+
+def _ip_delete_for_version(proteus, force, ip, version=None):
+    """Delete an IP assignment for a specific version, handling mapping.
+
+    If `version` differs from the IP's actual version, the IP is mapped.
+    """
+    # Map between IPv4 and IPv6 if necessary
+    if version:
+        version_int = int(version)
+        if version_int != ip.version:
+            ip = get_mapped_ip(ip)
+
+    if not force:
+        click.confirm(f'Do you really want do delete {ip}?', abort=True)
+
+    # get network information
+    data = proteus.get_entities_by_name('default', 0, 'Configuration')
+    conf_id = data[0]['id']
+    container_id = proteus.get_container_by_ip(ip, conf_id)['id']
+
+    proteus.delete_ip_address(ip, container_id)
+    return {'status': 'deleted', 'ip': ip.compressed}
+
+
 @ip.command(name='delete')
 @click.option('--force/--no-force', default=False, type=bool,
               help='Force will skip any additional confirmation.')
-@click.option('--version', required=False, type=int,
+@click.option('--version', required=False, type=IP_VERSION_CHOICE,
               help='IP version to use. '
               'Will use the mapping configuration if necessary.')
 @click.argument('ip', type=IP_TYPE)
@@ -223,19 +283,12 @@ def ip_set(proteus: Proteus, name, admin_email, admin_name, admin_phone,
 def ip_delete(proteus: Proteus, force, version, ip):
     '''Delete assigned IPv4 or IPv6 address
     '''
-    # Map between IPv4 and IPv6 if necessary
-    if version and version != ip.version:
-        ip = get_mapped_ip(ip)
-
-    if not force:
-        click.confirm(f'Do you really want do delete {ip}?', abort=True)
-
-    # get notwork information
-    data = proteus.get_entities_by_name('default', 0, 'Configuration')
-    conf_id = data[0]['id']
-    container_id = proteus.get_container_by_ip(ip, conf_id)['id']
-
-    proteus.delete_ip_address(ip, container_id)
+    if version == 'both':
+        return {
+            'v4': _ip_delete_for_version(proteus, force, ip, 4),
+            'v6': _ip_delete_for_version(proteus, force, ip, 6),
+        }
+    return _ip_delete_for_version(proteus, force, ip, version)
 
 
 @ip.command(name='map')
