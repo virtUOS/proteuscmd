@@ -48,10 +48,13 @@ class Proteus:
         return response.json()
 
     def __delete(self, path, params):
-        return requests.delete(self.__url(path),
-                               params=params,
-                               headers=self.__auth_header,
-                               timeout=30)
+        response = requests.delete(self.__url(path),
+                                   params=params,
+                                   headers=self.__auth_header,
+                                   timeout=30)
+        if response.status_code >= 300:
+            raise Exception(f'Error from requesting {path}: {response.text}')
+        return response
 
     def __parse_domain(self, domain):
         for src, to in self.__replacements.items():
